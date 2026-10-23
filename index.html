@@ -38,6 +38,7 @@ textarea{width:100%;height:220px;font:inherit;background:var(--bg);color:var(--t
 <div class="card">
   <input id="cls" placeholder="نام کلاس / درس" value="کلاس اول دانش">
   <div class="date" id="date"></div>
+  <div class="row" style="margin-top:8px"><input id="dtxt" placeholder="روز و تاریخ (قابل ویرایش)"><button class="btn s" id="dres" title="برگشت به تاریخ خودکار" style="flex:0 0 46px">↺</button><button class="btn s" id="ddel" title="حذف تاریخ" style="flex:0 0 46px">🗑</button></div>
   <input type="date" id="dpick" style="margin-top:8px">
   <div class="sum" id="sum"></div>
 </div>
@@ -62,12 +63,14 @@ const fa=n=>String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
 let d=new Date();
 function pad(n){return String(n).padStart(2,'0')}
 $('dpick').value=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-let tir=null;
+let tir=null,dmode='auto',dman='';
+function fullDate(){return dmode==='none'?'':dmode==='manual'?dman:dayName()+' '+dateStr()}
 function dayName(){if(tir)return tir.w;return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{weekday:'long'}).format(d)}
 function dateStr(){if(tir)return tir.ds;return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'long',day:'numeric'}).format(d)}
 function save(){try{localStorage.setItem('att_names',JSON.stringify(names))}catch(e){}}
 function render(){
-  $('date').textContent=dayName()+' '+dateStr();
+  $('date').textContent=fullDate()||'— بدون تاریخ —';
+  if(document.activeElement!==$('dtxt'))$('dtxt').value=fullDate();
   const L=$('list');L.className='card'+(edit?' edit':'');L.innerHTML='';
   names.forEach((n,i)=>{
     const a=st[n]===false;
@@ -83,12 +86,15 @@ function render(){
   const ab=names.filter(n=>st[n]===false).length;
   $('sum').textContent='حاضر: '+fa(names.length-ab)+'  |  غایب: '+fa(ab)+'  |  کل: '+fa(names.length);
 }
-$('dpick').onchange=e=>{tir=null;const v=e.target.value.split('-');if(v.length==3){d=new Date(+v[0],+v[1]-1,+v[2]);render()}};
+$('dtxt').oninput=e=>{dmode='manual';dman=e.target.value;$('date').textContent=dman||'— بدون تاریخ —';$('sum').dataset.k=1};
+$('dres').onclick=()=>{dmode='auto';render()};
+$('ddel').onclick=()=>{dmode='none';$('dtxt').value='';render()};
+$('dpick').onchange=e=>{dmode='auto';tir=null;const v=e.target.value.split('-');if(v.length==3){d=new Date(+v[0],+v[1]-1,+v[2]);render()}};
 $('allP').onclick=()=>{st={};render()};
 $('allA').onclick=()=>{names.forEach(n=>st[n]=false);render()};
 $('edt').onclick=()=>{edit=!edit;$('addbox').style.display=edit?'block':'none';$('edt').textContent=edit?'پایان ویرایش':'ویرایش اسامی';render()};
 $('addb').onclick=()=>{const v=$('newn').value.trim();if(v){names.push(v);$('newn').value='';save();render()}};
-function title(){const c=$('cls').value.trim();return (c?c+' - ':'')+dayName()+' '+dateStr()}
+function title(){const c=$('cls').value.trim(),f=fullDate();return [c,f].filter(Boolean).join(' - ')}
 function makeText(){
   const ab=names.filter(n=>st[n]===false);
   let t='📋 حضور و غیاب\n'+title()+'\n\n';
@@ -97,11 +103,21 @@ function makeText(){
   if(ab.length)t+='\n\nغایبین:\n'+ab.map(n=>'• '+n).join('\n');
   return t;
 }
-$('bTxt').onclick=async()=>{
+$('bTxt').onclick=()=>{
   const t=makeText();
-  $('out').innerHTML='<div class="card"><textarea id="ta" readonly></textarea><div class="hint">متن کپی شد؛ اگر نشد، متن را انتخاب و کپی کنید.</div></div>';
-  const ta=$('ta');ta.value=t;ta.focus();ta.select();
-  try{await navigator.clipboard.writeText(t)}catch(e){try{document.execCommand('copy')}catch(_){}}
+  const done=ok=>{
+    if(ok){$('out').innerHTML='<div class="card" style="text-align:center;color:var(--ok);font-weight:700">✅ متن کپی شد</div>';setTimeout(()=>{if($('out').textContent.includes('متن کپی شد'))$('out').innerHTML=''},2500)}
+    else{$('out').innerHTML='<div class="card"><textarea id="ta" readonly></textarea><div class="hint">کپی خودکار نشد؛ متن را انتخاب و کپی کنید.</div></div>';const ta=$('ta');ta.value=t;ta.focus();ta.select()}
+  };
+  const legacy=()=>{
+    const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,t.length);
+    let ok=false;try{ok=document.execCommand('copy')}catch(e){}
+    ta.remove();return ok;
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(()=>done(true),()=>done(legacy()));
+  }else done(legacy());
 };
 $('bImg').onclick=async()=>{
   try{await document.fonts.load('700 20px Vazirmatn')}catch(e){}
@@ -112,7 +128,7 @@ $('bImg').onclick=async()=>{
   x.fillStyle='#fff';x.fillRect(0,0,W,H);
   x.fillStyle='#1e3a8a';x.fillRect(0,0,W,90);
   x.fillStyle='#fff';x.font='700 24px '+F;x.fillText($('cls').value.trim()||'لیست حضور و غیاب',W-24,38);
-  x.font='400 17px '+F;x.fillText('لیست حضور و غیاب - '+dayName()+' '+dateStr(),W-24,70);
+  x.font='400 17px '+F;x.fillText('لیست حضور و غیاب'+(fullDate()?' - '+fullDate():''),W-24,70);
   let y=110;
   x.fillStyle='#e5e7eb';x.fillRect(16,y,W-32,34);
   x.fillStyle='#111';x.font='700 15px '+F;
