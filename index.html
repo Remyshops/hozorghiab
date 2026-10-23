@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>حضور و غیاب</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mu:#6b7280;--bd:#e3e6ea;--ok:#15803d;--okb:#dcfce7;--no:#b91c1c;--nob:#fee2e2;--ac:#2563eb;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171a;--card:#1d2125;--tx:#eceff1;--mu:#9aa3ad;--bd:#2d3339;--ok:#4ade80;--okb:#123d22;--no:#f87171;--nob:#451a1a;--ac:#60a5fa}}
+:root[data-theme="dark"]{--bg:#14171a;--card:#1d2125;--tx:#eceff1;--mu:#9aa3ad;--bd:#2d3339;--ok:#4ade80;--okb:#123d22;--no:#f87171;--nob:#451a1a;--ac:#60a5fa}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Vazirmatn,Tahoma,sans-serif;max-width:640px;margin:0 auto;padding:12px}
+h1{font-size:18px;margin:6px 0}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+input{font:inherit;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:8px;width:100%;box-sizing:border-box}
+.row{display:flex;gap:8px;align-items:center}
+.date{font-size:16px;font-weight:700;margin-top:8px}
+.sum{color:var(--mu);font-size:14px;margin-top:4px}
+.st{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--bd)}
+.st:last-child{border:0}
+.n{width:26px;color:var(--mu);font-size:13px}
+.nm{flex:1;font-size:15px}
+.t{font:inherit;font-weight:700;border:0;border-radius:8px;padding:8px 0;width:78px;cursor:pointer}
+.p{background:var(--okb);color:var(--ok)}.a{background:var(--nob);color:var(--no)}
+.btn{font:inherit;font-weight:700;border:0;border-radius:10px;padding:11px;flex:1;background:var(--ac);color:#fff;cursor:pointer}
+.btn.s{background:var(--card);color:var(--tx);border:1px solid var(--bd)}
+.x{background:none;border:0;color:var(--mu);font-size:18px;cursor:pointer;display:none}
+.edit .x{display:block}
+textarea{width:100%;height:220px;font:inherit;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:8px;box-sizing:border-box}
+#out img{width:100%;border-radius:8px;border:1px solid var(--bd)}
+.hint{font-size:12px;color:var(--mu);margin:6px 0}
+</style>
+</head>
+<body>
+<h1>📋 لیست حضور و غیاب</h1>
+<div class="card">
+  <input id="cls" placeholder="نام کلاس / درس (اختیاری)">
+  <div class="date" id="date"></div>
+  <input type="date" id="dpick" style="margin-top:8px">
+  <div class="sum" id="sum"></div>
+</div>
+<div class="row" style="margin-bottom:10px">
+  <button class="btn s" id="allP">همه حاضر</button>
+  <button class="btn s" id="allA">همه غایب</button>
+  <button class="btn s" id="edt">ویرایش اسامی</button>
+</div>
+<div class="card" id="list"></div>
+<div id="addbox" class="card" style="display:none"><div class="row"><input id="newn" placeholder="نام دانش‌آموز جدید"><button class="btn" id="addb" style="flex:0 0 70px">افزودن</button></div></div>
+<div class="row" style="margin-bottom:10px">
+  <button class="btn" id="bTxt">📝 خروجی متن</button>
+  <button class="btn" id="bImg">🖼 خروجی عکس</button>
+</div>
+<div id="out"></div>
+<script>
+const DEF=["عادل اخگریان","یوسف اسماعیل حسین‌آبادی","حسین امیری ابراهیم محمدی","محمد انتظاری","محمدامین انصاری‌نسب","امیرعلی نجاء","محمدسجاد توکلی کمکوئی","مهدیار جعفرپور بنادکی","سید جاوید جاکرالعباسی","سیدمحمدکیان حسینی کمال‌آبادی","ماهان حکیمی مهدی‌آبادی","امیرعلی خبیری","امیررضا دهقان","امیرعلی دهقان دهنوی","آریا رحیمی ببروئی","سینا زارع","محمدصالح زارع ارنان","امیرمحمد زارع سروی","محمدعماد زارع سروی","میکائیل شکاری خبر","امیرعلی شورابی مزرعه‌آخوند","امیرمحمد صادقی نجی","عادل صولت نیری","کیان طاهرنژاد جوزم","علیرضا علیزاده","سینا قانعی","مهدیار لطف‌آبادی ابدل","محمدیزدان محمدی","یاسین مرادی","بهراد مزرعه آتابزرگی","مرصاد منتظری هدش","ابوالفضل منصوری علی‌آباد","ماهان منصوری علی‌آباد","سیدرضا موسوی فخرآبادی","امیرارسلان میدانی","امیرحسام کاملمرد"];
+let names=DEF.slice(),st={},edit=false;
+try{const s=localStorage.getItem('att_names');if(s)names=JSON.parse(s)}catch(e){}
+const $=id=>document.getElementById(id);
+const fa=n=>String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
+let d=new Date();
+function pad(n){return String(n).padStart(2,'0')}
+$('dpick').value=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+function dayName(){return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{weekday:'long'}).format(d)}
+function dateStr(){return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'long',day:'numeric'}).format(d)}
+function save(){try{localStorage.setItem('att_names',JSON.stringify(names))}catch(e){}}
+function render(){
+  $('date').textContent=dayName()+' '+dateStr();
+  const L=$('list');L.className='card'+(edit?' edit':'');L.innerHTML='';
+  names.forEach((n,i)=>{
+    const a=st[n]===false;
+    const r=document.createElement('div');r.className='st';
+    r.innerHTML='<span class="n">'+fa(i+1)+'</span><span class="nm"></span>';
+    r.querySelector('.nm').textContent=n;
+    const b=document.createElement('button');b.className='t '+(a?'a':'p');b.textContent=a?'غایب ✗':'حاضر ✓';
+    b.onclick=()=>{st[n]=a;render()};r.appendChild(b);
+    const x=document.createElement('button');x.className='x';x.textContent='🗑';
+    x.onclick=()=>{names.splice(i,1);save();render()};r.appendChild(x);
+    L.appendChild(r);
+  });
+  const ab=names.filter(n=>st[n]===false).length;
+  $('sum').textContent='حاضر: '+fa(names.length-ab)+'  |  غایب: '+fa(ab)+'  |  کل: '+fa(names.length);
+}
+$('dpick').onchange=e=>{const v=e.target.value.split('-');if(v.length==3){d=new Date(+v[0],+v[1]-1,+v[2]);render()}};
+$('allP').onclick=()=>{st={};render()};
+$('allA').onclick=()=>{names.forEach(n=>st[n]=false);render()};
+$('edt').onclick=()=>{edit=!edit;$('addbox').style.display=edit?'block':'none';$('edt').textContent=edit?'پایان ویرایش':'ویرایش اسامی';render()};
+$('addb').onclick=()=>{const v=$('newn').value.trim();if(v){names.push(v);$('newn').value='';save();render()}};
+function title(){const c=$('cls').value.trim();return (c?c+' - ':'')+dayName()+' '+dateStr()}
+function makeText(){
+  const ab=names.filter(n=>st[n]===false);
+  let t='📋 حضور و غیاب\n'+title()+'\n\n';
+  names.forEach((n,i)=>{t+=fa(i+1)+'. '+n+' ← '+(st[n]===false?'❌ غایب':'✅ حاضر')+'\n'});
+  t+='\n✅ حاضر: '+fa(names.length-ab.length)+'   ❌ غایب: '+fa(ab.length);
+  if(ab.length)t+='\n\nغایبین:\n'+ab.map(n=>'• '+n).join('\n');
+  return t;
+}
+$('bTxt').onclick=async()=>{
+  const t=makeText();
+  $('out').innerHTML='<div class="card"><textarea id="ta" readonly></textarea><div class="hint">متن کپی شد؛ اگر نشد، متن را انتخاب و کپی کنید.</div></div>';
+  const ta=$('ta');ta.value=t;ta.focus();ta.select();
+  try{await navigator.clipboard.writeText(t)}catch(e){try{document.execCommand('copy')}catch(_){}}
+};
+$('bImg').onclick=async()=>{
+  try{await document.fonts.load('700 20px Vazirmatn')}catch(e){}
+  const W=720,RH=46,H=150+names.length*RH+80,S=2;
+  const c=document.createElement('canvas');c.width=W*S;c.height=H*S;
+  const x=c.getContext('2d');x.scale(S,S);x.direction='rtl';x.textAlign='right';
+  const F='Vazirmatn,Tahoma,sans-serif';
+  x.fillStyle='#fff';x.fillRect(0,0,W,H);
+  x.fillStyle='#1e3a8a';x.fillRect(0,0,W,90);
+  x.fillStyle='#fff';x.font='700 24px '+F;x.fillText('لیست حضور و غیاب',W-24,38);
+  x.font='400 17px '+F;x.fillText(title(),W-24,70);
+  let y=110;
+  x.fillStyle='#e5e7eb';x.fillRect(16,y,W-32,34);
+  x.fillStyle='#111';x.font='700 15px '+F;
+  x.fillText('ردیف',W-26,y+23);x.fillText('نام و نام خانوادگی',W-90,y+23);x.textAlign='center';x.fillText('وضعیت',70,y+23);x.textAlign='right';
+  y+=34;
+  names.forEach((n,i)=>{
+    const a=st[n]===false;
+    x.fillStyle=a?'#fee2e2':(i%2?'#f9fafb':'#fff');x.fillRect(16,y,W-32,RH);
+    x.strokeStyle='#e5e7eb';x.strokeRect(16,y,W-32,RH);
+    x.fillStyle='#111';x.font='400 16px '+F;x.fillText(fa(i+1),W-26,y+29);
+    x.font='400 18px '+F;x.fillText(n,W-90,y+30);
+    x.fillStyle=a?'#b91c1c':'#15803d';x.font='700 17px '+F;x.textAlign='center';
+    x.fillText(a?'غایب ✗':'حاضر ✓',70,y+30);x.textAlign='right';
+    y+=RH;
+  });
+  const ab=names.filter(n=>st[n]===false).length;
+  x.fillStyle='#111';x.font='700 17px '+F;
+  x.fillText('حاضر: '+fa(names.length-ab)+'   غایب: '+fa(ab)+'   کل: '+fa(names.length),W-24,y+36);
+  const url=c.toDataURL('image/png');
+  $('out').innerHTML='<div class="card"><img src="'+url+'" alt="لیست"><div class="hint">برای ذخیره، روی عکس نگه دارید (یا راست‌کلیک) و «ذخیره تصویر» را بزنید.</div><button class="btn" id="shr">اشتراک‌گذاری عکس</button></div>';
+  $('shr').onclick=()=>{c.toBlob(async b=>{try{const f=new File([b],'hozor-ghiab.png',{type:'image/png'});await navigator.share({files:[f]})}catch(e){}})};
+};
+render();
+</script>
+</body>
+</html>
