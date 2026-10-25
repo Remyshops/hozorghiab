@@ -38,6 +38,7 @@ textarea{width:100%;height:220px;font:inherit;background:var(--bg);color:var(--t
 <div class="card">
   <input id="cls" placeholder="نام کلاس / درس" value="کلاس اول دانش">
   <div class="date" id="date"></div>
+  <div class="row" style="margin-top:8px"><button class="btn s" id="dprev">→ روز قبل</button><button class="btn s" id="dnext">روز بعد ←</button></div>
   <div class="row" style="margin-top:8px"><input id="dtxt" placeholder="روز و تاریخ (قابل ویرایش)"><button class="btn s" id="dres" title="برگشت به تاریخ خودکار" style="flex:0 0 46px">↺</button><button class="btn s" id="ddel" title="حذف تاریخ" style="flex:0 0 46px">🗑</button></div>
   <input type="date" id="dpick" style="margin-top:8px">
   <div class="sum" id="sum"></div>
@@ -52,11 +53,12 @@ textarea{width:100%;height:220px;font:inherit;background:var(--bg);color:var(--t
 <div class="row" style="margin-bottom:10px">
   <button class="btn" id="bTxt">📝 خروجی متن</button>
   <button class="btn" id="bImg">🖼 خروجی عکس</button>
+  <button class="btn s" id="onlyA">🚫 فقط غایبین</button>
 </div>
 <div id="out"></div>
 <script>
 const DEF=["عادل اخگریان","یوسف اسماعیلی حسین‌آبادی","حسین امیری ابراهیم محمدی","محمد انتظاری","محمدامین انصاری‌نسب","امیر علی تجاء","محمدسجاد توکلی","مهدیار جعفرپور بنادکی","سید جاوید چاکرالعباسی","سیدمحمدکیان حسینی کمال‌آبادی","ماهان حکیمی مهدی‌آبادی","امیر علی خبری","امیررضا دهقان","امیرعلی دهقان دهنوی","آریا رحیمی ببروئی","سینا زارع","محمدصالح زارع ارنان","امیرمحمد زارع سروی","محمدعماد زارع سروی","میکائیل شکاری خبر","امیرعلی شورابی مزرعه‌آخوند","امیر محمد صادقی بخی","عادل صولت نیری","کیان طاهرنژاد جوزم","علیرضا علیزاده","سینا قانعی","مهدیار لطف آبادی","محمدیزدان محمدی","یاسین مرادی","بهراد آقا بزرگی","مرصاد منتظری هدش","ابوالفضل منصوری علی‌آباد","ماهان منصوری علی‌آباد","سیدرضا موسوی فخرآبادی","امیرارسلان میدانی","امیر حسام کامل مرد"];
-let names=DEF.slice(),st={},edit=false;
+let names=DEF.slice(),st={},edit=false,onlyAbs=false;
 try{const s=localStorage.getItem('att_names2');if(s)names=JSON.parse(s)}catch(e){}
 const $=id=>document.getElementById(id);
 const fa=n=>String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
@@ -72,10 +74,13 @@ function render(){
   $('date').textContent=fullDate()||'— بدون تاریخ —';
   if(document.activeElement!==$('dtxt'))$('dtxt').value=fullDate();
   const L=$('list');L.className='card'+(edit?' edit':'');L.innerHTML='';
+  let k=0;
   names.forEach((n,i)=>{
     const a=st[n]===false;
+    if(onlyAbs&&!a)return;
+    k++;
     const r=document.createElement('div');r.className='st';
-    r.innerHTML='<span class="n">'+fa(i+1)+'</span><span class="nm"></span>';
+    r.innerHTML='<span class="n">'+fa(k)+'</span><span class="nm"></span>';
     r.querySelector('.nm').textContent=n;
     const b=document.createElement('button');b.className='t '+(a?'a':'p');b.textContent=a?'غایب ✗':'حاضر ✓';
     b.onclick=()=>{st[n]=a;render()};r.appendChild(b);
@@ -83,13 +88,19 @@ function render(){
     x.onclick=()=>{names.splice(i,1);save();render()};r.appendChild(x);
     L.appendChild(r);
   });
+  if(onlyAbs&&!k)L.innerHTML='<div class="sum" style="text-align:center;padding:10px">هیچ غایبی وجود ندارد 🎉</div>';
+  const oa=$('onlyA');oa.className='btn '+(onlyAbs?'':'s');oa.textContent=onlyAbs?'✅ نمایش همه':'🚫 فقط غایبین';
   const ab=names.filter(n=>st[n]===false).length;
   $('sum').textContent='حاضر: '+fa(names.length-ab)+'  |  غایب: '+fa(ab)+'  |  کل: '+fa(names.length);
 }
 $('dtxt').oninput=e=>{dmode='manual';dman=e.target.value;$('date').textContent=dman||'— بدون تاریخ —';$('sum').dataset.k=1};
+function stepDay(n){dmode='auto';tir=null;$('dpick').dataset.x=1;d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);$('dpick').value=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());render()}
+$('dprev').onclick=()=>stepDay(-1);
+$('dnext').onclick=()=>stepDay(1);
 $('dres').onclick=()=>{dmode='auto';render()};
 $('ddel').onclick=()=>{dmode='none';$('dtxt').value='';render()};
 $('dpick').onchange=e=>{dmode='auto';tir=null;const v=e.target.value.split('-');if(v.length==3){d=new Date(+v[0],+v[1]-1,+v[2]);render()}};
+$('onlyA').onclick=()=>{onlyAbs=!onlyAbs;render()};
 $('allP').onclick=()=>{st={};render()};
 $('allA').onclick=()=>{names.forEach(n=>st[n]=false);render()};
 $('edt').onclick=()=>{edit=!edit;$('addbox').style.display=edit?'block':'none';$('edt').textContent=edit?'پایان ویرایش':'ویرایش اسامی';render()};
@@ -97,6 +108,12 @@ $('addb').onclick=()=>{const v=$('newn').value.trim();if(v){names.push(v);$('new
 function title(){const c=$('cls').value.trim(),f=fullDate();return [c,f].filter(Boolean).join(' - ')}
 function makeText(){
   const ab=names.filter(n=>st[n]===false);
+  if(onlyAbs){
+    let t='📋 غایبین\n'+title()+'\n\n';
+    if(ab.length)t+=ab.map((n,i)=>fa(i+1)+'. '+n+' ❌').join('\n')+'\n\n❌ تعداد غایب: '+fa(ab.length)+' از '+fa(names.length);
+    else t+='🎉 هیچ غایبی وجود ندارد';
+    return t;
+  }
   let t='📋 حضور و غیاب\n'+title()+'\n\n';
   names.forEach((n,i)=>{t+=fa(i+1)+'. '+n+' ← '+(st[n]===false?'❌ غایب':'✅ حاضر')+'\n'});
   t+='\n✅ حاضر: '+fa(names.length-ab.length)+'   ❌ غایب: '+fa(ab.length);
@@ -121,20 +138,22 @@ $('bTxt').onclick=()=>{
 };
 $('bImg').onclick=async()=>{
   try{await document.fonts.load('700 20px Vazirmatn')}catch(e){}
-  const W=720,RH=46,H=150+names.length*RH+80,S=3;
+  const rows=onlyAbs?names.filter(n=>st[n]===false):names;
+  const W=720,RH=46,H=150+Math.max(rows.length,1)*RH+80,S=3;
   const c=document.createElement('canvas');c.width=W*S;c.height=H*S;
   const x=c.getContext('2d');x.scale(S,S);x.direction='rtl';x.textAlign='right';
   const F='Vazirmatn,Tahoma,sans-serif';
   x.fillStyle='#fff';x.fillRect(0,0,W,H);
   x.fillStyle='#1e3a8a';x.fillRect(0,0,W,90);
   x.fillStyle='#fff';x.font='700 24px '+F;x.fillText($('cls').value.trim()||'لیست حضور و غیاب',W-24,38);
-  x.font='400 17px '+F;x.fillText('لیست حضور و غیاب'+(fullDate()?' - '+fullDate():''),W-24,70);
+  x.font='400 17px '+F;x.fillText((onlyAbs?'لیست غایبین':'لیست حضور و غیاب')+(fullDate()?' - '+fullDate():''),W-24,70);
   let y=110;
   x.fillStyle='#e5e7eb';x.fillRect(16,y,W-32,34);
   x.fillStyle='#111';x.font='700 15px '+F;
   x.fillText('ردیف',W-26,y+23);x.fillText('نام و نام خانوادگی',W-90,y+23);x.textAlign='center';x.fillText('وضعیت',70,y+23);x.textAlign='right';
   y+=34;
-  names.forEach((n,i)=>{
+  if(!rows.length){x.fillStyle='#111';x.font='700 18px '+F;x.textAlign='center';x.fillText('هیچ غایبی وجود ندارد 🎉',W/2,y+30);x.textAlign='right';y+=RH}
+  rows.forEach((n,i)=>{
     const a=st[n]===false;
     x.fillStyle=a?'#fee2e2':(i%2?'#f9fafb':'#fff');x.fillRect(16,y,W-32,RH);
     x.strokeStyle='#e5e7eb';x.strokeRect(16,y,W-32,RH);
@@ -146,7 +165,7 @@ $('bImg').onclick=async()=>{
   });
   const ab=names.filter(n=>st[n]===false).length;
   x.fillStyle='#111';x.font='700 17px '+F;
-  x.fillText('حاضر: '+fa(names.length-ab)+'   غایب: '+fa(ab)+'   کل: '+fa(names.length),W-24,y+36);
+  x.fillText(onlyAbs?('تعداد غایب: '+fa(ab)+' از '+fa(names.length)):('حاضر: '+fa(names.length-ab)+'   غایب: '+fa(ab)+'   کل: '+fa(names.length)),W-24,y+36);
   $('out').innerHTML='<div class="card" id="res"><div class="hint">در حال ساخت عکس…</div></div>';
   $('res').scrollIntoView({behavior:'smooth',block:'start'});
   c.toBlob(b=>{
